@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="120" height="120" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="dogTiredGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#C0C0C0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#A9A9A9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(10,10)">
+    <!-- Body -->
+    <ellipse cx="50" cy="60" rx="40" ry="30" fill="url(#dogTiredGradient)"/>
+    <!-- Head -->
+    <circle cx="50" cy="40" r="25" fill="url(#dogTiredGradient)"/>
+    <!-- Drooping Ears -->
+    <path d="M25 25 Q 15 35 20 45" fill="url(#dogTiredGradient)"/>
+    <path d="M75 25 Q 85 35 80 45" fill="url(#dogTiredGradient)"/>
+    <!-- Sleepy Eyes -->
+    <line x1="35" y1="35" x2="45" y2="35" stroke="black" stroke-width="2"/>
+    <line x1="55" y1="35" x2="65" y2="35" stroke="black" stroke-width="2"/>
+    <!-- Nose -->
+    <circle cx="50" cy="45" r="5" fill="#000"/>
+    <!-- Tired Mouth -->
+    <path d="M45 50 Q 50 45 55 50" stroke="black" stroke-width="2" fill="none"/>
+    <!-- Drooping Tail -->
+    <path d="M90 60 Q 95 70 85 75" stroke="url(#dogTiredGradient)" stroke-width="8" fill="none"/>
+  </g>
+</svg>
