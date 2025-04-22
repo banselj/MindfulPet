@@ -254,63 +254,53 @@ export class PasswordRecovery {
     return PasswordRecovery.RECOVERY_QUESTIONS;
   }
 
-  private async generateQuantumSalt(): Promise<string> {
-    const quantumBytes = await this.qke.generateQuantumRandomness(32);
-    const regularBytes = await Crypto.getRandomBytesAsync(32);
-    
-    // Combine quantum and regular randomness
-    const combined = new Uint8Array(64);
-    combined.set(new Uint8Array(quantumBytes), 0);
-    combined.set(new Uint8Array(regularBytes), 32);
-    
-    return Buffer.from(combined).toString('base64');
-  }
-
   private async generateRecoveryToken(): Promise<string> {
-    const quantumBytes = await this.qke.generateQuantumRandomness(32);
+    const quantumSession = await this.qke.establishSession();
+    const quantumBytesArr = new Uint8Array(quantumSession.keyPair.secretKey.buffer);
     const regularBytes = await Crypto.getRandomBytesAsync(32);
-    
-    // Combine and hash for token
-    const combined = new Uint8Array(64);
-    combined.set(new Uint8Array(quantumBytes), 0);
-    combined.set(new Uint8Array(regularBytes), 32);
-    
-    const hash = await Crypto.digestStringAsync(
+    const combined = new Uint8Array(quantumBytesArr.length + regularBytes.length);
+    combined.set(quantumBytesArr, 0);
+    combined.set(regularBytes, quantumBytesArr.length);
+    const tokenBase64 = btoa(String.fromCharCode(...combined));
+    return await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
-      combined
+      tokenBase64
     );
-    
-    return hash;
   }
 
-  private async hashAnswer(
-    answer: string,
-    salt: string
-  ): Promise<string> {
+  private async generateQuantumSalt(): Promise<string> {
+    const quantumSession = await this.qke.establishSession();
+    const quantumBytesArr = new Uint8Array(quantumSession.keyPair.secretKey.buffer);
+    const regularBytes = await Crypto.getRandomBytesAsync(32);
+    const combined = new Uint8Array(quantumBytesArr.length + regularBytes.length);
+    combined.set(quantumBytesArr, 0);
+    combined.set(regularBytes, quantumBytesArr.length);
+    // Convert to base64
+    return btoa(String.fromCharCode(...combined));
+  }
+
+  private async hashAnswer(answer: string, salt: string): Promise<string> {
     const encoder = new TextEncoder();
     const data = encoder.encode(answer.toLowerCase().trim() + salt);
+    // Convert Uint8Array to string for hashing
+    const dataStr = btoa(String.fromCharCode(...data));
     return await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA512,
-      data
+      dataStr
     );
   }
 
-  private async hashPassword(
-    password: string,
-    salt: string
-  ): Promise<string> {
+  private async hashPassword(password: string, salt: string): Promise<string> {
     const encoder = new TextEncoder();
     const data = encoder.encode(password + salt);
+    const dataStr = btoa(String.fromCharCode(...data));
     return await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA512,
-      data
+      dataStr
     );
   }
 
-  private async sendRecoveryEmail(
-    email: string,
-    token: string
-  ): Promise<void> {
+  private async sendRecoveryEmail(email: string, token: string): Promise<void> {
     // Implementation depends on email service
     // This is a placeholder for the actual email sending logic
     console.log(`Recovery email sent to ${email} with token ${token}`);

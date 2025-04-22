@@ -1,7 +1,7 @@
 import { SecurityService } from './securityService';
 import { QuantumKeyExchange } from './quantumKeyExchange';
 import { SecureStorage } from './secureStorage';
-import { QuantumSecurityError } from './types';
+import { QuantumSecurityError, QuantumKeyPair } from './types';
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import { Buffer } from 'buffer';
@@ -9,7 +9,7 @@ import { Buffer } from 'buffer';
 interface AuthState {
   userId: string;
   sessionId: string;
-  keyPair: CryptoKeyPair;
+  keyPair: QuantumKeyPair;
   timestamp: number;
   deviceId: string;
 }
@@ -42,7 +42,7 @@ export class QuantumAuth {
   public async register(
     username: string,
     password: string,
-    biometricData?: Float64Array
+    biometricData?: Float32Array
   ): Promise<string> {
     try {
       // Generate quantum-resistant key pair
@@ -90,7 +90,7 @@ export class QuantumAuth {
   public async login(
     username: string,
     password: string,
-    biometricData?: Float64Array
+    biometricData?: Float32Array
   ): Promise<boolean> {
     try {
       // Check for account lockout
@@ -145,7 +145,8 @@ export class QuantumAuth {
     try {
       if (this.currentState) {
         // Revoke quantum session
-        await this.qke.revokeSession(this.currentState.sessionId);
+        // TODO: revoke quantum session if supported by QuantumKeyExchange
+      // await this.qke.revokeSession(this.currentState.sessionId);
         
         // Clear authentication state
         this.currentState = null;
@@ -198,7 +199,7 @@ export class QuantumAuth {
   public async updateCredentials(
     currentPassword: string,
     newPassword?: string,
-    newBiometricData?: Float64Array
+    newBiometricData?: Float32Array
   ): Promise<boolean> {
     try {
       if (!this.currentState) return false;
@@ -252,7 +253,9 @@ export class QuantumAuth {
   }
 
   private async generateQuantumSalt(): Promise<string> {
-    const quantumBytes = await this.qke.generateQuantumRandomness(32);
+    // Use quantum entropy from keyPair.secretKey (first 32 bytes)
+    const quantumSession = await this.qke.establishSession();
+    const quantumBytes = new Uint8Array(quantumSession.keyPair.secretKey.buffer).slice(0, 32);
     const regularBytes = await Crypto.getRandomBytesAsync(32);
     
     // Combine quantum and regular randomness
@@ -267,8 +270,7 @@ export class QuantumAuth {
     password: string,
     salt: string
   ): Promise<string> {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password + salt);
+    const data = Buffer.from(password + salt).toString('base64');
     const hash = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA512,
       data
@@ -277,9 +279,9 @@ export class QuantumAuth {
   }
 
   private async hashBiometricData(
-    biometricData: Float64Array
+    biometricData: Float32Array
   ): Promise<string> {
-    const data = Buffer.from(biometricData.buffer);
+    const data = Buffer.from(biometricData.buffer).toString('base64');
     const hash = await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA512,
       data

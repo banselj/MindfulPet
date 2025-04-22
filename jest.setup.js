@@ -2,6 +2,23 @@
 const { expect } = require('@jest/globals');
 global.expect = expect;
 
+// Gesture handler setup
+import 'react-native-gesture-handler/jestSetup';
+
+// Mock NativeEventEmitter
+jest.mock('react-native/Libraries/EventEmitter/NativeEventEmitter');
+
+// Mock DeviceEventEmitter
+jest.mock('react-native/Libraries/EventEmitter/DeviceEventEmitter', () => ({
+  addListener: jest.fn(),
+  removeListener: jest.fn(),
+  emit: jest.fn(),
+}));
+
+// Mock VirtualizedList internals
+jest.mock('react-native/Libraries/Lists/VirtualizedList', () => 'VirtualizedList');
+jest.mock('react-native/Libraries/Lists/VirtualizedListCellRenderer', () => 'VirtualizedListCellRenderer');
+
 // Import testing library extensions
 require('jest-extended');
 require('@testing-library/jest-native');

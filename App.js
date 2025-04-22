@@ -19,7 +19,44 @@ const LoadingScreen = () => (
   </View>
 );
 
+class GlobalErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('Global error boundary caught:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={styles.loadingContainer}>
+          <Text style={{ color: 'red', fontSize: 18 }}>An error occurred:</Text>
+          <Text selectable style={{ color: 'red', fontSize: 14 }}>{String(this.state.error)}</Text>
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
+  // DEBUG: Top-level banner
+  if (typeof window !== 'undefined') {
+    window.__MINDFULPET_DEBUG = true;
+  }
+  return (
+    <View style={{ backgroundColor: 'yellow', padding: 12, zIndex: 9999 }}>
+      <Text style={{ color: 'black', fontWeight: 'bold' }}>DEBUG: App.js is rendering</Text>
+      {renderAppContent()}
+    </View>
+  );
+}
+
+function renderAppContent() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -39,21 +76,25 @@ export default function App() {
   }, []);
 
   if (isLoading) {
+    console.log('App is loading...');
     return <LoadingScreen />;
   }
+  console.log('App loaded, rendering providers and AppNavigator...');
 
   return (
-    <Provider store={store}>
-      <SafeAreaProvider>
-        <AuthProvider>
-          <PetProvider>
-            <AchievementsProvider>
-              <AppNavigator />
-            </AchievementsProvider>
-          </PetProvider>
-        </AuthProvider>
-      </SafeAreaProvider>
-    </Provider>
+    <GlobalErrorBoundary>
+      <Provider store={store}>
+        <SafeAreaProvider>
+          <AuthProvider>
+            <PetProvider>
+              <AchievementsProvider>
+                <AppNavigator />
+              </AchievementsProvider>
+            </PetProvider>
+          </AuthProvider>
+        </SafeAreaProvider>
+      </Provider>
+    </GlobalErrorBoundary>
   );
 }
 

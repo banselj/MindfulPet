@@ -120,7 +120,7 @@ const RegisterScreen = ({ navigation }: { navigation: any }) => {
         });
         
         if (result.success) {
-          biometricData = new Float64Array(
+          biometricData = new Float32Array(
             Buffer.from(JSON.stringify(result)).buffer
           );
         }

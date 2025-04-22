@@ -38,7 +38,7 @@ export class LatticeCrypto {
 
       return {
         publicKey: this.tensorToMatrix(publicKey),
-        secretKey: await secretKey.data()
+        secretKey: new Float32Array(secretKey.dataSync())
       };
     } catch (error) {
       throw new QuantumSecurityError(
@@ -49,12 +49,12 @@ export class LatticeCrypto {
     }
   }
 
-  public async encrypt(message: Float64Array, publicKey: Matrix): Promise<Ciphertext> {
+  public async encrypt(message: Float32Array, publicKey: Matrix): Promise<Ciphertext> {
     try {
       const start = performance.now();
 
       // Convert message to tensor
-      const m = tf.tensor1d(message);
+      const m = tf.tensor1d(Float32Array.from(message), 'float32');
       
       // Generate random vector r
       const r = await this.generateRandomVector();
@@ -81,7 +81,7 @@ export class LatticeCrypto {
 
       return {
         u: this.tensorToMatrix(u),
-        v: await v.data() as Float64Array
+        v: new Float32Array(v.dataSync())
       };
     } catch (error) {
       throw new QuantumSecurityError(
@@ -92,14 +92,14 @@ export class LatticeCrypto {
     }
   }
 
-  public async decrypt(ciphertext: Ciphertext, secretKey: Float64Array): Promise<Float64Array> {
+  public async decrypt(ciphertext: Ciphertext, secretKey: Float32Array): Promise<Float32Array> {
     try {
       const start = performance.now();
 
       // Convert ciphertext components to tensors
       const u = this.matrixToTensor(ciphertext.u);
-      const v = tf.tensor1d(ciphertext.v);
-      const s = tf.tensor1d(secretKey);
+      const v = tf.tensor1d(Float32Array.from(ciphertext.v), 'float32');
+      const s = tf.tensor1d(Float32Array.from(secretKey), 'float32');
 
       // Compute m = v - s^T * u
       const message = tf.sub(v, tf.dot(s, u));
@@ -115,7 +115,7 @@ export class LatticeCrypto {
         );
       }
 
-      return await result.data() as Float64Array;
+      return new Float32Array(result.dataSync());
     } catch (error) {
       throw new QuantumSecurityError(
         'DECRYPTION_FAILED',
@@ -164,7 +164,7 @@ export class LatticeCrypto {
     s: tf.Tensor1D,
     e: tf.Tensor1D
   ): Promise<tf.Tensor2D> {
-    return tf.add(tf.matMul(A, tf.expandDims(s, 1)), tf.expandDims(e, 1));
+    return tf.add(tf.matMul(A, tf.expandDims(s, 1)), tf.expandDims(e, 1)) as tf.Tensor2D;
   }
 
   private async generateRandomVector(): Promise<tf.Tensor1D> {
@@ -175,13 +175,13 @@ export class LatticeCrypto {
     return {
       rows: tensor.shape[0],
       cols: tensor.shape[1] || 1,
-      data: new Float64Array(tensor.dataSync())
+      data: new Float32Array(tensor.dataSync())
     };
   }
 
   private matrixToTensor(matrix: Matrix): tf.Tensor {
     return tf.tensor(
-      Array.from(matrix.data),
+      Float32Array.from(matrix.data),
       [matrix.rows, matrix.cols]
     );
   }
@@ -191,12 +191,12 @@ export class LatticeCrypto {
     try {
       const u1 = this.matrixToTensor(ct1.u);
       const u2 = this.matrixToTensor(ct2.u);
-      const v1 = tf.tensor1d(ct1.v);
-      const v2 = tf.tensor1d(ct2.v);
+      const v1 = tf.tensor1d(Float32Array.from(ct1.v), 'float32');
+      const v2 = tf.tensor1d(Float32Array.from(ct2.v), 'float32');
 
       return {
         u: this.tensorToMatrix(tf.add(u1, u2)),
-        v: await tf.add(v1, v2).data() as Float64Array
+        v: new Float32Array((await tf.add(v1, v2).data()))
       };
     } catch (error) {
       throw new QuantumSecurityError(

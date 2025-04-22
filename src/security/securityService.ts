@@ -1,11 +1,23 @@
 import { LatticeCrypto } from './latticeCrypto';
 import { QuantumKeyExchange } from './quantumKeyExchange';
-import { SecureAggregator } from './secureAggregator';
+import { SecureAggregator } from './secureAggregator'; // Only import once
 import { QuantumSession, QuantumSecurityError } from './types';
 import * as tf from '@tensorflow/tfjs';
 
 export class SecurityService {
-  // ... existing fields
+  public keyExchange: QuantumKeyExchange;
+  public latticeCrypto: LatticeCrypto;
+  public aggregator: SecureAggregator;
+  public currentSession: any;
+
+  private static instance: SecurityService;
+
+  private constructor() {
+    this.latticeCrypto = new LatticeCrypto();
+    this.aggregator = new SecureAggregator();
+    this.keyExchange = new QuantumKeyExchange();
+    this.currentSession = null;
+  }
 
   /**
    * Initializes a secure aggregation round.
@@ -39,12 +51,6 @@ export class SecurityService {
     return this.aggregator.finalizeRound(roundId);
   }
 
-  private constructor() {
-    this.latticeCrypto = new LatticeCrypto();
-    this.keyExchange = new QuantumKeyExchange();
-    this.aggregator = new SecureAggregator();
-    this.initializeTensorFlow();
-  }
 
   public static getInstance(): SecurityService {
     if (!SecurityService.instance) {
@@ -85,9 +91,9 @@ export class SecurityService {
         await this.initializeSecureSession();
       }
 
-      // Convert data to Float64Array
+      // Convert data to Float32Array
       const buffer = new TextEncoder().encode(JSON.stringify(data));
-      const floatArray = new Float64Array(buffer);
+      const floatArray = new Float32Array(buffer);
 
       // Encrypt using lattice-based encryption
       const encrypted = await this.latticeCrypto.encrypt(
@@ -152,7 +158,7 @@ export class SecurityService {
           'Content-Type': 'application/quantum-encrypted',
           'X-Quantum-Session': this.currentSession!.id,
           'X-Quantum-Nonce': Array.from(this.currentSession!.nonce)
-            .map(b => b.toString(16).padStart(2, '0'))
+            .map(b => (b as number).toString(16).padStart(2, '0'))
             .join('')
         },
         body: encryptedData ? JSON.stringify({ data: encryptedData }) : undefined
@@ -185,9 +191,9 @@ export class SecurityService {
         );
       }
 
-      // Convert data to Float64Array
+      // Convert data to Float32Array
       const buffer = new TextEncoder().encode(JSON.stringify(data));
-      const floatArray = new Float64Array(buffer);
+      const floatArray = new Float32Array(buffer);
 
       // Encrypt data for aggregation
       const encrypted = await this.latticeCrypto.encrypt(

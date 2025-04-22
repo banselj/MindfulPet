@@ -141,7 +141,7 @@ export class SecureAggregator {
       u: {
         rows: aggregated.u.rows,
         cols: aggregated.u.cols,
-        data: new Float64Array(
+        data: new Float32Array(
           tf.add(
             tf.tensor2d(
               Array.from(aggregated.u.data),
@@ -151,7 +151,7 @@ export class SecureAggregator {
           ).dataSync()
         )
       },
-      v: new Float64Array(
+      v: new Float32Array(
         tf.add(
           tf.tensor1d(aggregated.v),
           vNoise

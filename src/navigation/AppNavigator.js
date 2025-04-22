@@ -29,7 +29,6 @@ import ProfileScreen from '../screens/profile/ProfileScreen';
 import ARPetView from '../components/ar/ARPetView';
 import StoreScreen from '../screens/store/StoreScreen';
 import HomeScreen from '../screens/HomeScreen';
-import PetDetailScreen from '../screens/PetDetailScreen';
 import { PetSelectionScreen } from '../screens/PetSelectionScreen';
 
 const Stack = createStackNavigator();
@@ -90,15 +89,7 @@ const HomeStack = () => (
         },
       }}
     />
-    <Stack.Screen 
-      name="PetDetail" 
-      component={PetDetailScreen} 
-      listeners={{
-        focus: () => {
-          DebugUtil.logNavigation('HomeStack', 'PetDetail');
-        },
-      }}
-    />
+
   </Stack.Navigator>
 );
 

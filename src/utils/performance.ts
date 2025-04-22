@@ -10,7 +10,7 @@ export function startTimer(label: string): number {
 
 export function endTimer(label: string, start: number): number {
   const duration = Date.now() - start;
-  // eslint-disable-next-line no-console
+   
   console.info(`[PERFORMANCE] ${label}: ${duration}ms`);
   return duration;
 }

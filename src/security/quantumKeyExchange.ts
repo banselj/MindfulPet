@@ -1,4 +1,4 @@
-import { QuantumSession, QuantumSecurityError } from './types';
+import { QuantumSession, QuantumSecurityError, QuantumKeyPair, Matrix } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import * as tf from '@tensorflow/tfjs';
 
@@ -64,10 +64,9 @@ export class QuantumKeyExchange {
     return tf.tidy(() => {
       // Create superposition states
       const superposition = tf.randomUniform([numPairs, 2], 0, 1);
-      
       // Normalize to create valid quantum states
       const norm = tf.sqrt(tf.sum(tf.square(superposition), 1));
-      return tf.div(superposition, tf.expandDims(norm, 1));
+      return tf.div(superposition, tf.expandDims(norm, 1)) as tf.Tensor2D;
     });
   }
 
@@ -79,15 +78,24 @@ export class QuantumKeyExchange {
     
     // Perform measurements in respective bases
     const measurements = await tf.tidy(() => {
-      const measurementOperators = bases.map(b => 
+      // measurementOperators: [numPairs, 2, 2]
+      const measurementOperators: number[][][] = Array.from(bases).map(b =>
         b ? [[1, 1], [1, -1]] : [[1, 0], [0, 1]]
       );
-      
-      return tf.stack(measurementOperators).matMul(eprPairs);
-    }).data();
+      const measurementTensor = tf.tensor(measurementOperators, [bases.length, 2, 2], 'float32');
+      // eprPairs: [numPairs, 2] -> [numPairs, 2, 1] for matMul
+      const eprPairs3D = eprPairs.reshape([eprPairs.shape[0], 2, 1]);
+      // matMul: [numPairs, 2, 2] x [numPairs, 2, 1] -> [numPairs, 2, 1]
+      const result = tf.matMul(measurementTensor, eprPairs3D);
+      // Take the first output value for each pair
+      const arr2d = result.squeeze([2]).arraySync() as number[][];
+      return arr2d.map((arr: number[]) => arr[0]);
+    });
 
+    // Ensure measurements is always a number[]
+    const measurementsArray: number[] = Array.isArray(measurements) ? measurements as number[] : [measurements as number];
     // Convert measurements to raw key bits
-    const rawKey = new Uint8Array(measurements.map(m => m > 0.5 ? 1 : 0));
+    const rawKey = new Uint8Array(measurementsArray.map((m: number) => m > 0.5 ? 1 : 0));
 
     return { rawKey, bases };
   }
@@ -171,18 +179,37 @@ export class QuantumKeyExchange {
 
   private async generateSessionKeyPair(
     seed: Uint8Array
-  ): Promise<{ publicKey: CryptoKey; privateKey: CryptoKey }> {
+  ): Promise<QuantumKeyPair> {
     // Generate deterministic key pair from quantum-derived seed
     const params = {
       name: 'ECDSA',
       namedCurve: 'P-256'
     };
 
-    return crypto.subtle.generateKey(
+    // Generate ECDSA key pair
+    const keyPair = await crypto.subtle.generateKey(
       params,
       true,
       ['sign', 'verify']
-    );
+    ) as CryptoKeyPair;
+
+    // Derive secretKey as Float32Array from seed
+    const secretKey = new Float32Array(seed.buffer, seed.byteOffset, Math.min(32, Math.floor(seed.byteLength / 4)));
+
+    // Create a dummy publicKey Matrix (for demo, use seed data reshaped)
+    const publicKeyData = new Float32Array(32);
+    publicKeyData.set(new Uint8Array(seed.buffer, seed.byteOffset, Math.min(32, seed.byteLength)).map(b => b / 255));
+    const publicKey: Matrix = {
+      rows: 8,
+      cols: 4,
+      data: publicKeyData
+    };
+
+    return {
+      publicKey,
+      secretKey,
+      privateKey: keyPair.privateKey
+    };
   }
 
   private startSessionCleanup(): void {

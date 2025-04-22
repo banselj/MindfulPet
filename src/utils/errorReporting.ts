@@ -8,7 +8,7 @@ export function reportError(error: Error, context?: string): void {
   if (process.env.NODE_ENV === 'production') {
     // sendErrorToService(error, context);
   } else {
-    // eslint-disable-next-line no-console
+     
     console.error(`[ERROR REPORT]${context ? ` [${context}]` : ''}`, error);
   }
 }

@@ -52,7 +52,9 @@ public security: SecurityService;
   ): Promise<SessionData> {
     try {
       // Generate quantum session token
-      const quantumKey = await this.qke.generateQuantumKey();
+      // Use quantum key from a new quantum session
+const quantumSession = await this.qke.establishSession();
+const quantumKey = Buffer.from(quantumSession.keyPair.secretKey.buffer).toString('base64');
       const token = await this.generateSessionToken();
       const deviceId = await this.getDeviceId();
 
@@ -134,7 +136,7 @@ public security: SecurityService;
       const session: SessionData = await this.security.decryptData(sessionData);
       
       // Generate new quantum key
-      session.quantumKey = await this.qke.generateQuantumKey();
+      session.quantumKey = Buffer.from((await this.qke.establishSession()).keyPair.secretKey.buffer).toString('base64');
       session.lastRefreshed = Date.now();
 
       // Update session storage
@@ -254,13 +256,12 @@ public async getActiveSessions(userId: string): Promise<string[]> {
   }
 
   private async generateSessionToken(): Promise<string> {
-    const quantumBytes = await this.qke.generateQuantumRandomness(32);
+    // Use entropy from new quantum session for randomness
+    const quantumSession = await this.qke.establishSession();
+    const quantumEntropy = Buffer.from(quantumSession.keyPair.secretKey.buffer).toString('hex').slice(0, 64);
     const regularBytes = await Crypto.getRandomBytesAsync(32);
     
-    const combined = new Uint8Array(64);
-    combined.set(new Uint8Array(quantumBytes), 0);
-    combined.set(new Uint8Array(regularBytes), 32);
-    
+    const combined = quantumEntropy + Buffer.from(regularBytes).toString('hex');
     return await Crypto.digestStringAsync(
       Crypto.CryptoDigestAlgorithm.SHA256,
       combined

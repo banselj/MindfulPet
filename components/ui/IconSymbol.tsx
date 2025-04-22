@@ -1,6 +1,7 @@
 // This file is a fallback for using MaterialIcons on Android and web.
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
+import { View } from 'react-native';
 import { SymbolWeight } from 'expo-symbols';
 import React from 'react';
 import { OpaqueColorValue, StyleProp, ViewStyle, TextStyle } from 'react-native';
@@ -37,8 +38,25 @@ export function IconSymbol({
   size?: number;
   color: string | OpaqueColorValue;
   // Accept any style for maximum compatibility with tab bars and platform-specific usages
-  style?: any;
+  style?: StyleProp<TextStyle> | StyleProp<ViewStyle>;
   weight?: SymbolWeight;
 }) {
-  return <MaterialIcons color={color} size={size} name={MAPPING[name]} style={style as any} />;
+  // Accept both TextStyle and ViewStyle for cross-platform tab/icon use
+  // If style is a ViewStyle, wrap in a View; otherwise, pass as TextStyle
+  const iconName = MAPPING[name] || 'help';
+  // Only pass style if it's a TextStyle, otherwise wrap in a View
+  const isViewStyle = style && (Array.isArray(style)
+    ? style.some(s => s && (s as any).flex !== undefined)
+    : (style as any)?.flex !== undefined);
+  if (isViewStyle) {
+    return (
+      <View style={style as ViewStyle}>
+        <MaterialIcons name={iconName} size={size} color={color as string} />
+      </View>
+    );
+  }
+  // Only pass style if not undefined
+  return (
+    <MaterialIcons name={iconName} size={size} color={color as string} {...(style ? { style: style as TextStyle } : {})} />
+  );
 }

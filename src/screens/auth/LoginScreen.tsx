@@ -80,7 +80,7 @@ const LoginScreen = ({ navigation }: LoginScreenProps) => {
         
         if (result.success) {
           // Convert biometric result to quantum-compatible format
-          biometricData = new Float64Array(
+          biometricData = new Float32Array(
             Buffer.from(JSON.stringify(result)).buffer
           );
         }

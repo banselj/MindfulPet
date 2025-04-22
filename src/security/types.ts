@@ -1,17 +1,18 @@
 export interface Matrix {
   rows: number;
   cols: number;
-  data: Float64Array;
+  data: Float32Array;
 }
 
 export interface Ciphertext {
   u: Matrix;
-  v: Float64Array;
+  v: Float32Array;
 }
 
 export interface QuantumKeyPair {
   publicKey: Matrix;
-  secretKey: Float64Array;
+  secretKey: Float32Array;
+  privateKey?: CryptoKey;
 }
 
 export interface QuantumSession {

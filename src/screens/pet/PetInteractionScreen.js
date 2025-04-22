@@ -13,8 +13,8 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import PetRenderer from '../../components/pet/PetRenderer';
 import PetInteractionSystem from '../../systems/PetInteraction';
 import PetHealthSystem from '../../systems/PetHealth';
-import { updatePet } from '../../state/petSlice';
-import { addCurrency } from '../../state/currencySlice';
+import { updatePet } from '../../state/slices/petSlice';
+import { addCurrency } from '../../state/slices/currencySlice';
 
 const PetInteractionScreen = () => {
   const dispatch = useDispatch();

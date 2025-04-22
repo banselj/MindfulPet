@@ -11,11 +11,17 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+import React, { useState } from 'react';
+import Onboarding from './Onboarding';
+import { SubscriptionProvider, useSubscription } from '../context/SubscriptionContext';
+import PaywallScreen from '../components/ui/PaywallScreen';
+
+function MainApp() {
   const colorScheme = useColorScheme();
   const [loaded] = useFonts({
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
   });
+  const { loading, isSubscribed } = useSubscription();
 
   useEffect(() => {
     if (loaded) {
@@ -23,10 +29,8 @@ export default function RootLayout() {
     }
   }, [loaded]);
 
-  if (!loaded) {
-    return null;
-  }
-
+  if (loading || !loaded) return null; // Optionally show a splash or loader
+  if (!isSubscribed) return <PaywallScreen />;
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
@@ -35,5 +39,17 @@ export default function RootLayout() {
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
+  );
+}
+
+export default function RootLayout() {
+  const [showOnboarding, setShowOnboarding] = useState(true);
+  if (showOnboarding) {
+    return <Onboarding onFinish={() => setShowOnboarding(false)} />;
+  }
+  return (
+    <SubscriptionProvider>
+      <MainApp />
+    </SubscriptionProvider>
   );
 }
